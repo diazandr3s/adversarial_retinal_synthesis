@@ -72,12 +72,9 @@ def discriminator_generator(it, g, dout_size=(16, 16)):
     # Sample fake and real pairs
     for a, b in it:
         a_fake = a
-        if K.backend == 'tensorflow':
-            with graph1.as_default():
-                b_fake = g.predict(a_fake)
-        else:
+        with graph1.as_default():
             b_fake = g.predict(a_fake)
-            
+
         a_real, b_real = next(it)
 
         # Concatenate the channels. Images become (ch_a + ch_b) x 256 x 256
@@ -107,11 +104,9 @@ def train_discriminator(d, it, batch_size=20):
 def code_discriminator_generator(it, encoder, dout_size=(16, 16)):
     """Define a generator that produces data for the full generator network."""
     for a, _ in it:
-        if K.backend == 'tensorflow':
-            with graph2.as_default():
-                z_fake = encoder.predict(a)
-        else:
-            z_fake = encoder.predict(a)            
+
+        with graph2.as_default():
+            z_fake = encoder.predict(a)
             
         z_real = np.random.normal(loc=0., scale=1., size=z_fake.shape)
 
@@ -371,7 +366,7 @@ if __name__ == '__main__':
         'is_a_grayscale': True,  # If A is grayscale
         'is_b_grayscale': False,  # If B is grayscale
         'log_dir': 'log',  # Directory to log
-        'base_dir': 'data/unet_segmentations_binary',  # Directory that contains the data
+        'base_dir': '../vess2ret/data/unet_segmentations_binary',  # Directory that contains the data
         'train_dir': 'train',  # Directory inside base_dir that contains training data
         'val_dir': 'val',  # Directory inside base_dir that contains validation data
         'load_to_memory': True,  # Whether to load the images into memory
@@ -380,7 +375,7 @@ if __name__ == '__main__':
         'latent_dim': 16,  # The dimension of the latent space. Necessary when training the VAE
         'alpha': 100,  # The weight of the reconstruction loss of the atob model
         'beta': 100,  # The weight of the reconstruction loss of the atoa model
-        'save_every': 10,  # Save results every 'save_every' epochs on the log folder
+        'save_every': 1,  # Save results every 'save_every' epochs on the log folder
         'lr': 2e-4,  # The learning rate to train the models
         'beta_1': 0.5,  # The beta_1 value of the Adam optimizer
         'continue_train': False,  # If it should continue the training from the last checkpoint
@@ -393,7 +388,7 @@ if __name__ == '__main__':
         'vertical_flip': False,  # If true performs random vertical flips on the train set
         'zoom_range': 0.,  # Defines the range to scale the image for dataset augmentation
         'pix2pix': False,  # If true only trains a pix2pix. Otherwise it trains the pix2pix2pix
-        'expt_name': None,  # The name of the experiment. Saves the logs into a folder with this name
+        'expt_name': 'exp2',  # The name of the experiment. Saves the logs into a folder with this name
         'target_size': 256,  # The size of the images loaded by the iterator. DOES NOT CHANGE THE MODELS
     })
 
@@ -433,19 +428,13 @@ if __name__ == '__main__':
     if not params.pix2pix:
         vae = m.g_vae(params.a_ch, params.a_ch, params.nfatoa, params.latent_dim,
                       is_binary=params.is_a_binary)
-    
-    if K.backend == 'tensorflow':
-        graph1 = K.get_session().graph
-    else:
-        graph1 = None
+
+    graph1 = K.get_session().graph
 
     # Define the discriminator
     d = m.discriminator(params.a_ch, params.b_ch, params.nfd, opt=dopt)
-    
-    if K.backend == 'tensorflow':
-        graph2 = K.get_session().graph
-    else:
-        graph1 = None        
+
+    graph2 = K.get_session().graph
 
     if params.continue_train:
         load_weights(vae, unet, d, log_dir=params.log_dir, expt_name=params.expt_name)

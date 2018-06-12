@@ -4,11 +4,13 @@ import json
 from errno import EEXIST
 
 import numpy as np
-import seaborn as sns
+#import seaborn as sns
 import cPickle as pickle
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-sns.set()
+#sns.set()
 
 DEFAULT_LOG_DIR = 'log'
 ATOA_WEIGHTS_FILE = 'atoa_weights.h5'
@@ -57,7 +59,15 @@ def convert_to_rgb(img, is_binary=False):
 
 def compose_imgs(a, b, is_a_binary=False, is_b_binary=False):
     """Place a and b side by side to be plotted."""
-    ap = convert_to_rgb(a, is_binary=is_a_binary)
+
+    # ap = convert_to_rgb(a, is_binary=is_a_binary)
+
+    num_max = np.amax(a)
+    a[a >= num_max / 2] = 1
+    a[a <  num_max / 2] = 0
+    ap = np.repeat(a, 3, axis=0)
+    ap = ap.transpose((1, 2, 0))
+
     bp = convert_to_rgb(b, is_binary=is_b_binary)
 
     if ap.shape != bp.shape:
